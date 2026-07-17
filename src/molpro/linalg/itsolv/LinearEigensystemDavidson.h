@@ -1,7 +1,5 @@
 #ifndef LINEARALGEBRA_SRC_MOLPRO_LINALG_ITSOLV_LINEAREIGENSYSTEMDAVIDSON_H
 #define LINEARALGEBRA_SRC_MOLPRO_LINALG_ITSOLV_LINEAREIGENSYSTEMDAVIDSON_H
-#include <iterator>
-#include <map>
 #include <molpro/Profiler.h>
 #include <molpro/linalg/itsolv/CastOptions.h>
 #include <molpro/linalg/itsolv/DSpaceResetter.h>
@@ -12,6 +10,11 @@
 #include <molpro/linalg/itsolv/rspace_options.h>
 #include <molpro/linalg/itsolv/subspace/SubspaceSolverLinEig.h>
 #include <molpro/linalg/itsolv/subspace/XSpace.h>
+
+#include <algorithm>
+#include <cassert>
+#include <iterator>
+#include <map>
 
 namespace molpro::linalg::itsolv {
 
@@ -196,8 +199,33 @@ protected:
     auto prof = this->profiler()->push("itsolv::construct_residual");
     assert(params.size() >= roots.size());
     const auto& eigvals = eigenvalues();
-    for (size_t i = 0; i < roots.size(); ++i)
+
+    auto subspace_solver = std::dynamic_pointer_cast<subspace::SubspaceSolverLinEig<R, Q, P>>(this->m_subspace_solver);
+    assert(subspace_solver);
+    const auto& imag_eigval_components = subspace_solver->imag_eigval_components();
+
+    for (size_t i = 0; i < roots.size(); ++i) {
       this->m_handlers->rr().axpy(-eigvals.at(roots[i]), params.at(i), actions.at(i));
+
+      auto it = std::ranges::find(imag_eigval_components, roots[i], [](const auto& pair) { return pair.first; });
+
+      if (it != imag_eigval_components.end()) {
+        // Ref.: https://doi.org/10.1063/1.2755681 (Appendix)
+        const auto distance = std::ranges::distance(imag_eigval_components.begin(), it);
+        const int offset = (distance % 2) == 0 ? 1 : -1;
+
+        auto root_it = std::ranges::find(roots, roots[i] + offset);
+        if (root_it == roots.end()) {
+          logger->warn(
+              "Complex conjugate eigenvalue pair incomplete in construct_residual (this can lead to poor convergence)");
+          continue;
+        }
+
+        const std::size_t param_idx = std::ranges::distance(roots.begin(), root_it);
+
+        this->m_handlers->rr().axpy(it->second, params.at(param_idx), actions.at(i));
+      }
+    }
   }
 
   detail::DSpaceResetter<Q> m_dspace_resetter; //!< resets D space
