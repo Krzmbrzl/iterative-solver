@@ -323,7 +323,8 @@ void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>
 template <typename value_type, typename std::enable_if_t<!is_complex<value_type>{}, std::nullptr_t>>
 void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>& eigenvalues,
                   const std::vector<value_type>& matrix, const std::vector<value_type>& metric, size_t dimension,
-                  bool hermitian, double svdThreshold, int verbosity, bool condone_complex) {
+                  bool hermitian, double svdThreshold, int verbosity,
+                  std::vector<std::pair<std::size_t, value_type>>* imag_eval_parts) {
   using MatrixT = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
   using ComplexMatrixT = Eigen::Matrix<std::complex<value_type>, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
   using MatrixRowMajT = Eigen::Matrix<value_type, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
@@ -418,7 +419,10 @@ void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>
   // Determine order of eigenvalues such that they come in non-descending order of their real part
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(subspaceEigenvalues.size());
   perm.setIdentity();
-  std::ranges::sort(perm.indices(), std::less<>{}, [&subspaceEigenvalues](auto idx) { return subspaceEigenvalues[idx].real(); });
+  std::ranges::sort(perm.indices(), std::less<>{},
+                    [&subspaceEigenvalues](auto idx) { return subspaceEigenvalues[idx].real(); });
+
+  // TODO: ensure relative order of conjugated eigvec pairs
 
   // Apply determined order to eigenvalues and -vectors
   subspaceEigenvectors = subspaceEigenvectors * perm;
@@ -455,15 +459,37 @@ void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>
     }
   }
 
-  if (condone_complex) {
+  if (imag_eval_parts) {
+    // Complex eigenvalues are tolerable -> process them to be able to represent everything
+    // by real-valued vectors
+    imag_eval_parts->clear();
+
     for (Eigen::Index root = 0; root < Hbar.cols(); ++root) {
-      if (subspaceEigenvalues(root).imag() != 0) {
-        // Same procedure as we did for the metric's eigenvectors further up
-        subspaceEigenvalues(root) = subspaceEigenvalues(root + 1) = subspaceEigenvalues(root).real();
-        subspaceEigenvectors.col(root) = subspaceEigenvectors.col(root).real();
-        subspaceEigenvectors.col(root + 1) = subspaceEigenvectors.col(root + 1).imag();
-        ++root;
+      if (subspaceEigenvalues(root).imag() == 0) {
+        continue;
       }
+
+      // Complex-valued eigenvalues must appear as complex conjugate pairs
+      assert(root + 1 < subspaceEigenvalues.size());
+      assert(std::abs(std::conj(subspaceEigenvalues(root)) - subspaceEigenvalues(root + 1)) < 1e-10);
+
+      imag_eval_parts->emplace_back(root, subspaceEigenvalues(root).imag());
+      imag_eval_parts->emplace_back(root + 1, -subspaceEigenvalues(root).imag());
+
+      // Set the eigenvalue pair to their real-part only (imaginary part is tracked separately in imag_eval_parts)
+      subspaceEigenvalues(root) = subspaceEigenvalues(root + 1) = subspaceEigenvalues(root).real();
+
+      // Pretend the real and imaginary part were separate eigenvectors (this is required in order
+      // to represent all data without the need for using complex numbers).
+      // However, as the eigenvalues are not degenerate, the real and imaginary parts of the eigenvectors
+      // are in fact NOT eigenvectors themselves.
+      // If the true eigenvectors are required, they can easily be recovered from the real and imaginary
+      // parts we store here.
+      subspaceEigenvectors.col(root + 1) = subspaceEigenvectors.col(root).imag();
+      subspaceEigenvectors.col(root) = subspaceEigenvectors.col(root).real();
+
+      // Skip the second eigenvalue in the pair of complex conjugate eigenvalues
+      ++root;
     }
   }
 
