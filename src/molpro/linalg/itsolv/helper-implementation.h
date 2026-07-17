@@ -315,7 +315,7 @@ void printMatrix(const std::vector<value_type>& m, size_t rows, size_t cols, std
 template <typename value_type, typename std::enable_if_t<is_complex<value_type>{}, int>>
 void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>& eigenvalues,
                   const std::vector<value_type>& matrix, const std::vector<value_type>& metric, size_t dimension,
-                  bool hermitian, double svdThreshold, int verbosity, bool condone_complex) {
+                  bool hermitian, double svdThreshold, int verbosity) {
   assert(false); // Complex not implemented here
 }
 

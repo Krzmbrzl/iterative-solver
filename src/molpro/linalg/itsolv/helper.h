@@ -58,7 +58,7 @@ void printMatrix(const std::vector<value_type>&, size_t rows, size_t cols, std::
 template <typename value_type, typename std::enable_if_t<is_complex<value_type>{}, int> = 0>
 void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>& eigenvalues,
                   const std::vector<value_type>& matrix, const std::vector<value_type>& metric, size_t dimension,
-                  bool hermitian, double svdThreshold, int verbosity, bool condone_complex);
+                  bool hermitian, double svdThreshold, int verbosity);
 
 template <typename value_type, typename std::enable_if_t<!is_complex<value_type>{}, std::nullptr_t> = nullptr>
 void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>& eigenvalues,
@@ -122,7 +122,7 @@ extern template void eigenproblem<std::complex<double>>(std::vector<std::complex
                                                         const std::vector<std::complex<double>>& matrix,
                                                         const std::vector<std::complex<double>>& metric,
                                                         const size_t dimension, bool hermitian, double svdThreshold,
-                                                        int verbosity, bool condone_complex);
+                                                        int verbosity);
 
 extern template void solve_LinearEquations<std::complex<double>>(
     std::vector<std::complex<double>>& solution, std::vector<std::complex<double>>& eigenvalues,
