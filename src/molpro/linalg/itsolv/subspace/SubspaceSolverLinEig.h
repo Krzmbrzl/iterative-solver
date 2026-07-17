@@ -81,7 +81,11 @@ protected:
       m_logger->info("The following eigenvalues turned out to be complex-valued: ",
                      m_imag_eigval_comps |
                          std::ranges::views::transform([](const auto& pair) { return pair.first + 1; }));
-      m_logger->data_dump("imaginary parts of eigenvalues = ", m_imag_eigval_comps);
+      m_logger->data_dump("imaginary parts of eigenvalues = ",
+                          m_imag_eigval_comps | std::ranges::views::transform([](auto pair) {
+                            pair.first += 1;
+                            return pair;
+                          }));
     }
     m_logger->data_dump("eigenvectors = ", m_solutions);
   }
