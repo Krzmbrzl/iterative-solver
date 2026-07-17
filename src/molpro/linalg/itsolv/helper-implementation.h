@@ -145,7 +145,8 @@ inline int eigensolver_lapacke_dsyev(std::span<const double> matrix, std::span<d
 
   // validate input
   if (eigenvectors.size() != matrix.size()) {
-    throw std::runtime_error("Matrix of eigenvectors and input matrix are not the same size!");
+    throw std::runtime_error("Matrix of eigenvectors and input matrix are not the same size! (" +
+                             std::to_string(eigenvectors.size()) + " vs. " + std::to_string(matrix.size()) + ")");
   }
 
   if (eigenvectors.size() != dimension * dimension || eigenvalues.size() != dimension) {
