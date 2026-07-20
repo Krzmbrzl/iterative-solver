@@ -417,12 +417,19 @@ void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>
   }
 
   // Determine order of eigenvalues such that they come in non-descending order of their real part
+  // (and non-descending order of imaginary part, in case of equal real parts)
   Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(subspaceEigenvalues.size());
   perm.setIdentity();
-  std::ranges::sort(perm.indices(), std::less<>{},
-                    [&subspaceEigenvalues](auto idx) { return subspaceEigenvalues[idx].real(); });
+  std::ranges::sort(
+      perm.indices(),
+      [](const std::complex<value_type>& lhs, const std::complex<value_type>& rhs) {
+        if (lhs.real() != rhs.real()) {
+          return lhs.real() < rhs.real();
+        }
 
-  // TODO: ensure relative order of conjugated eigvec pairs
+        return lhs.imag() < rhs.imag();
+      },
+      [&subspaceEigenvalues](auto idx) { return subspaceEigenvalues[idx]; });
 
   // Apply determined order to eigenvalues and -vectors
   subspaceEigenvectors = subspaceEigenvectors * perm;

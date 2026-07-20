@@ -139,8 +139,8 @@ TEST(helper_implementation, eigenproblem) {
 
   ASSERT_TRUE(std::ranges::none_of(evecs, [](double val) { return std::isnan(val); }));
   const double tol = 1e-10;
-  ASSERT_THAT(imag_evals, (::testing::ElementsAre(testing::Pair(3, testing::DoubleNear(0.003316941525, tol)),
-                                                  testing::Pair(4, testing::DoubleNear(-0.003316941525, tol)))));
+  ASSERT_THAT(imag_evals, (::testing::ElementsAre(testing::Pair(3, testing::DoubleNear(-0.003316941525, tol)),
+                                                  testing::Pair(4, testing::DoubleNear(0.003316941525, tol)))));
 }
 
 TEST(helper_implementation, eigenproblem_rank_deficient) {
@@ -299,6 +299,6 @@ TEST(helper_implementation, eigenproblem_complex) {
 
   ASSERT_TRUE(std::ranges::none_of(evecs, [](double val) { return std::isnan(val); }));
   const double tol = 1e-10;
-  ASSERT_THAT(imag_evals, (::testing::ElementsAre(testing::Pair(1, testing::DoubleNear(0.000072204230, tol)),
-                                                  testing::Pair(2, testing::DoubleNear(-0.000072204230, tol)))));
+  ASSERT_THAT(imag_evals, (::testing::ElementsAre(testing::Pair(1, testing::DoubleNear(-0.000072204230, tol)),
+                                                  testing::Pair(2, testing::DoubleNear(0.000072204230, tol)))));
 }
