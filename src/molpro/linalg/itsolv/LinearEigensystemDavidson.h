@@ -211,11 +211,30 @@ protected:
 
       if (it != imag_eigval_components.end()) {
         // Ref.: https://doi.org/10.1063/1.2755681 (Appendix)
+        // The idea is the following: We make use of the fact that the real and imaginary parts of the
+        // eigenvectors belonging to the complex root pair are spanned by the same basis. This allows
+        // us to split the associated residual vectors into a part corresponding to the real and a part
+        // corresponding to the imaginary part as well. The actual (complex-valued) residual can then
+        // always be reconstructed from this and therefore we don't lose any information. The formulas are
+        // |(R_real)_i> = sum_j [ (|A_j> - (e_real)_i |b_j>) (c_real)_{ji} + (e_imag) |b_j> (c_imag)_{ji} ]
+        // |(R_imag)_i> = sum_j [ (|A_j> - (e_real)_i |b_j>) (c_imag)_{ji} - (e_imag) |b_j> (c_real)_{ji} ]
+        // where |A_j> is the j-th action and |b_j> the j-th trial vector. e are the complex conjugate
+        // eigenvalues and c the associated eigenvectors.
+        // Note: At this point, params and actions already contain the vectors transformed into the
+        // eigenbasis (aka.: multiplied with c). Due to the way we process these complex-valued vectors,
+        // the first vector in a pair is the one that has been transformed with the real and the second
+        // with the imaginary part of c.
+        // The above code has already dealt with the bulk of the necessary expression and we only need
+        // to add the part with the imaginary components of the eigenvalue pair. We use the knowledge
+        // about the ordering of vectors (which has been transformed with what eigenvector component)
+        // to compute the right thing without explicit access to the eigenvectors.
         const auto distance = std::ranges::distance(imag_eigval_components.begin(), it);
         const int offset = (distance % 2) == 0 ? 1 : -1;
 
         auto root_it = std::ranges::find(roots, roots[i] + offset);
         if (root_it == roots.end()) {
+          // We can only do this, if we have both components of a complex eigenvalue/eigenvector pair
+          // available here.
           logger->warn(
               "Complex conjugate eigenvalue pair incomplete in construct_residual (this can lead to poor convergence)");
           continue;
@@ -223,6 +242,8 @@ protected:
 
         const std::size_t param_idx = std::ranges::distance(roots.begin(), root_it);
 
+        // Note: The minus sign in above expression is implicitly taken into account as the
+        // imaginary parts of the complex conjugate eigenvalue pair has flipped signs
         this->m_handlers->rr().axpy(it->second, params.at(param_idx), actions.at(i));
       }
     }
