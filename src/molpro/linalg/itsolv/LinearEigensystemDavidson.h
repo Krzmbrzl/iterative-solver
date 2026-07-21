@@ -5,6 +5,7 @@
 #include <molpro/linalg/itsolv/DSpaceResetter.h>
 #include <molpro/linalg/itsolv/IterativeSolverTemplate.h>
 #include <molpro/linalg/itsolv/Logger.h>
+#include <molpro/linalg/itsolv/helper.h>
 #include <molpro/linalg/itsolv/propose_rspace.h>
 #include <molpro/linalg/itsolv/qspace_options.h>
 #include <molpro/linalg/itsolv/rspace_options.h>
@@ -17,6 +18,18 @@
 #include <map>
 
 namespace molpro::linalg::itsolv {
+
+namespace log {
+
+template< typename value_type >
+struct ComplexRootsDavidson : ContextBase<ComplexRootsDavidson<value_type>, true, std::vector<std::pair<std::size_t, value_type>>> {
+	static const char *name;
+};
+template<typename value_type>
+const char *ComplexRootsDavidson<value_type>::name = "ComplexRootsDavidson";
+static_assert(context<ComplexRootsDavidson<double>>);
+
+}
 
 /*!
  * @brief One specific implementation of LinearEigensystem using Davidson's algorithm
@@ -94,6 +107,29 @@ public:
     auto wparams = std::vector<std::reference_wrapper<R>>{std::ref(parameters)};
     auto wactions = std::vector<std::reference_wrapper<R>>{std::ref(actions)};
     return end_iteration(wparams, wactions);
+  }
+
+  void finalize() override {
+    if constexpr (is_complex<typename R::value_type>::value) {
+      return;
+    }
+
+    auto subspace_solver = std::dynamic_pointer_cast<subspace::SubspaceSolverLinEig<R, Q, P>>(this->m_subspace_solver);
+    assert(subspace_solver);
+    auto imag_eigval_components = subspace_solver->imag_eigval_components();
+    if (imag_eigval_components.empty()) {
+      return;
+    }
+
+    // Convert to 1-based indexing for printout
+    for (auto& pair : imag_eigval_components) {
+      pair.first += 1;
+    }
+
+    logger->warn<log::ComplexRootsDavidson<typename R::value_type>>(
+        "The following roots are complex-valued. Associated eigenvectors are the real and imaginary part "
+        "of the pairs and the imaginary parts of the eigenvalues are ",
+        imag_eigval_components);
   }
 
   //! Applies the Davidson preconditioner
