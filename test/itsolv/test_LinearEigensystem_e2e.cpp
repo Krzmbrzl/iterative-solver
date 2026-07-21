@@ -56,8 +56,6 @@ TEST(LinearEigensystem, Davidson_complex_roots) {
     auto solver = molpro::linalg::itsolv::create_LinearEigensystem<Rvector>("Davidson");
     solver->set_n_roots(4);
     solver->set_max_iter(100);
-    solver->logger().enable_data_dumps(true);
-    solver->logger().set_verbosity(molpro::linalg::itsolv::log::Verbosity::Trace);
 
     std::vector<Rvector> params;
     std::vector<Rvector> actions;
