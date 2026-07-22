@@ -55,8 +55,7 @@ public:
       : SolverTemplate(std::make_shared<subspace::XSpace<R, Q, P>>(handlers, logger_),
                        std::static_pointer_cast<subspace::ISubspaceSolver<R, Q, P>>(
                            std::make_shared<subspace::SubspaceSolverLinEig<R, Q, P>>(logger_)),
-                       handlers, std::make_shared<Statistics>(), logger_),
-        logger(logger_) {
+                       handlers, std::make_shared<Statistics>(), logger_) {
     set_hermiticity(m_hermiticity);
     this->m_normalise_solution = false;
   }
@@ -126,7 +125,7 @@ public:
       pair.first += 1;
     }
 
-    logger->warn<log::ComplexRootsDavidson<typename R::value_type>>(
+    this->m_logger->template warn<log::ComplexRootsDavidson<typename R::value_type>>(
         "The following roots are complex-valued. Associated eigenvectors are the real and imaginary part "
         "of the pairs and the imaginary parts of the eigenvalues are ",
         imag_eigval_components);
@@ -228,8 +227,6 @@ public:
     return opt;
   }
 
-  std::shared_ptr<Logger> logger;
-
 protected:
   void construct_residual(const std::vector<int>& roots, const CVecRef<R>& params, const VecRef<R>& actions) override {
     auto prof = this->profiler()->push("itsolv::construct_residual");
@@ -271,7 +268,7 @@ protected:
         if (root_it == roots.end()) {
           // We can only do this, if we have both components of a complex eigenvalue/eigenvector pair
           // available here.
-          logger->warn(
+          this->m_logger->warn(
               "Complex conjugate eigenvalue pair incomplete in construct_residual (this can lead to poor convergence)");
           continue;
         }
