@@ -76,9 +76,10 @@ TEST(LinearEigensystem, Davidson_complex_roots) {
 
     ASSERT_EQ(eigvals.size(), solver->n_roots());
     const double tol = 1e-9;
-    ASSERT_THAT(eigvals[0], ::testing::DoubleNear(-0.360430299, tol));
-    ASSERT_THAT(eigvals[1], ::testing::DoubleNear(1.5975220393, tol));
-    ASSERT_THAT(eigvals[2], ::testing::DoubleNear(2.3814541296, tol));
+    ASSERT_THAT(eigvals.at(0), ::testing::DoubleNear(-0.360430299, tol));
+    ASSERT_THAT(eigvals.at(1), ::testing::DoubleNear(1.5975220393, tol));
+    ASSERT_THAT(eigvals.at(2), ::testing::DoubleNear(2.3814541296, tol));
+    ASSERT_THAT(eigvals.at(3), ::testing::DoubleNear(2.3814541296, tol));
   }
 
   molpro::mpi::finalize();
