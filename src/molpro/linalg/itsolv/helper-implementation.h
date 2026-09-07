@@ -427,6 +427,12 @@ void eigenproblem(std::vector<value_type>& eigenvectors, std::vector<value_type>
           return lhs.real() < rhs.real();
         }
 
+        if (std::abs(lhs.imag()) != std::abs(rhs.imag())) {
+          // This fixes the order of distinct complex eigenvalue pairs that share the same real part
+          return std::abs(lhs.imag()) < std::abs(rhs.imag());
+        }
+
+        // This fixes the order within a complex eigenvalue pair
         return lhs.imag() < rhs.imag();
       },
       [&subspaceEigenvalues](auto idx) { return subspaceEigenvalues[idx]; });
