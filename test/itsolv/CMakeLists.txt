@@ -48,7 +48,7 @@ endif ()
 
 foreach (t test_LinearEigensystem test_LinearEquations test_Optimize test_NonLinearEquations test_svd_system test_LinearEigensystem_e2e)
     add_executable(${t}.exe ${t}.cpp test.h SolverFactory_implementation.cpp)
-	if (FORTRAN AND EXISTS "${t}F.F90")
+	if (FORTRAN AND EXISTS "${t}F.f90")
         target_sources(${t}.exe PRIVATE ${t}F.f90)
     else ()
         target_compile_definitions(${t}.exe PRIVATE -DNOFORTRAN)
